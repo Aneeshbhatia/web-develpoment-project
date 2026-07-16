@@ -8,6 +8,7 @@ const {
   getOrder,
   cancelOrder,
   getOrderCount,
+  updateOrderStatus,
 } = require("../controllers/orderController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -35,6 +36,12 @@ router.get("/count", protect, getOrderCount);
 // GET /api/orders/:id
 // =====================================
 router.get("/:id", protect, getOrder);
+
+// =====================================
+// Update Order Status (Admin)
+// PUT /api/orders/:id
+// =====================================
+router.put("/:id", protect, updateOrderStatus);
 
 // =====================================
 // Cancel Order

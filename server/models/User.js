@@ -62,6 +62,15 @@ const userSchema = new mongoose.Schema(
     dateOfBirth: {
       type: Date,
     },
+
+    // ===========================
+    // Admin
+    // ===========================
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

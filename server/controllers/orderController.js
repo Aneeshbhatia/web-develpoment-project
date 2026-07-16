@@ -26,8 +26,7 @@ const placeOrder = async (req, res) => {
     }));
 
     const totalAmount = cart.reduce(
-      (sum, item) =>
-        sum + item.product.price * item.quantity,
+      (sum, item) => sum + item.product.price * item.quantity,
       0
     );
 
@@ -39,7 +38,6 @@ const placeOrder = async (req, res) => {
       paymentMethod,
     });
 
-    // Clear Cart
     await Cart.deleteMany({
       user: req.user.id,
     });
@@ -61,16 +59,30 @@ const placeOrder = async (req, res) => {
 };
 
 // =====================================
-// Get My Orders
+// Get Orders
 // =====================================
 const getOrders = async (req, res) => {
+
   try {
 
-    const orders = await Order.find({
-      user: req.user.id,
-    })
-      .populate("items.product")
-      .sort({ createdAt: -1 });
+    let orders;
+
+    if (req.user.role === "admin") {
+
+      orders = await Order.find()
+        .populate("user", "name email")
+        .populate("items.product")
+        .sort({ createdAt: -1 });
+
+    } else {
+
+      orders = await Order.find({
+        user: req.user.id,
+      })
+        .populate("items.product")
+        .sort({ createdAt: -1 });
+
+    }
 
     res.status(200).json({
       success: true,
@@ -86,15 +98,18 @@ const getOrders = async (req, res) => {
     });
 
   }
+
 };
 
 // =====================================
 // Get Single Order
 // =====================================
 const getOrder = async (req, res) => {
+
   try {
 
     const order = await Order.findById(req.params.id)
+      .populate("user", "name email")
       .populate("items.product");
 
     if (!order) {
@@ -117,21 +132,64 @@ const getOrder = async (req, res) => {
     });
 
   }
+
+};
+
+// =====================================
+// Update Order Status (Admin)
+// =====================================
+const updateOrderStatus = async (req, res) => {
+
+  try {
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+
+    }
+
+    order.orderStatus = req.body.status;
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Order status updated",
+      order,
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+
 };
 
 // =====================================
 // Cancel Order
 // =====================================
 const cancelOrder = async (req, res) => {
+
   try {
 
     const order = await Order.findById(req.params.id);
 
     if (!order) {
+
       return res.status(404).json({
         success: false,
         message: "Order not found",
       });
+
     }
 
     order.orderStatus = "Cancelled";
@@ -152,17 +210,29 @@ const cancelOrder = async (req, res) => {
     });
 
   }
+
 };
 
 // =====================================
 // Order Count
 // =====================================
 const getOrderCount = async (req, res) => {
+
   try {
 
-    const count = await Order.countDocuments({
-      user: req.user.id,
-    });
+    let count;
+
+    if (req.user.role === "admin") {
+
+      count = await Order.countDocuments();
+
+    } else {
+
+      count = await Order.countDocuments({
+        user: req.user.id,
+      });
+
+    }
 
     res.status(200).json({
       success: true,
@@ -177,12 +247,14 @@ const getOrderCount = async (req, res) => {
     });
 
   }
+
 };
 
 module.exports = {
   placeOrder,
   getOrders,
   getOrder,
+  updateOrderStatus,
   cancelOrder,
   getOrderCount,
 };

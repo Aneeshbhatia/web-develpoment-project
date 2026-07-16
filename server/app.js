@@ -2,7 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
+// ============================
 // Routes
+// ============================
+
 const authRoutes = require("./routes/authRoutes");
 const farmRoutes = require("./routes/farmRoutes");
 const alertRoutes = require("./routes/alertRoutes");
@@ -13,25 +16,27 @@ const productRoutes = require("./routes/productRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
+const userRoutes = require("./routes/userRoutes"); // ✅ NEW
+
 const app = express();
 
 // ============================
 // Middleware
 // ============================
+
 app.use(cors());
 
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
 
-
-
-
 app.use(cookieParser());
 
 // ============================
 // Home Route
 // ============================
+
 app.get("/", (req, res) => {
   res.send("🌱 Smart Irrigation API Running...");
 });
@@ -39,30 +44,47 @@ app.get("/", (req, res) => {
 // ============================
 // API Routes
 // ============================
+
+// Authentication
 app.use("/api/auth", authRoutes);
 
+// Farms
 app.use("/api/farms", farmRoutes);
 
+// Weather
 app.use("/api/weather", weatherRoutes);
 
+// AI Recommendation
 app.use("/api/recommendation", recommendationRoutes);
 
-app.use("/api/equipment", equipmentRoutes); 
+// Equipment
+app.use("/api/equipment", equipmentRoutes);
 
+// Dashboard
+app.use("/api/dashboard", dashboardRoutes);
+
+// Marketplace Products
 app.use("/api/products", productRoutes);
 
+// Orders
 app.use("/api/orders", orderRoutes);
 
+// Users (Admin)
+app.use("/api/users", userRoutes);
+
+// User Profile
 app.use("/api/profile", profileRoutes);
 
-app.use("/api/alerts", alertRoutes); 
+// Alerts
+app.use("/api/alerts", alertRoutes);
 
+// Cart
 app.use("/api/cart", cartRoutes);
-
 
 // ============================
 // 404 Route
 // ============================
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
