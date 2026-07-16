@@ -5,18 +5,30 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+
 import Farms from "./pages/Farms";
 import AddFarm from "./pages/AddFarm";
 import EditFarm from "./pages/EditFarm";
-import Marketplace from "./pages/Marketplace";
+
 import Equipment from "./pages/Equipment";
 import AddEquipment from "./pages/AddEquipment";
 import EditEquipment from "./pages/EditEquipment";
+
+import Marketplace from "./pages/Marketplace";
+import Cart from "./pages/Cart";
+import Orders from "./pages/Orders";
+
 import Alerts from "./pages/Alerts";
 import Recommendation from "./pages/Recommendation";
 import Profile from "./pages/Profile";
-import Cart from "./pages/Cart";
-import Orders from "./pages/Orders";
+
+// Admin Pages
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AddProduct from "./pages/admin/AddProduct";
+import EditProduct from "./pages/admin/EditProduct";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 // Components
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -37,7 +49,7 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         {/* ==========================
-            Protected Routes
+            User Dashboard
         ========================== */}
 
         <Route
@@ -48,6 +60,10 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ==========================
+            Farm Routes
+        ========================== */}
 
         <Route
           path="/farms"
@@ -76,6 +92,10 @@ function App() {
           }
         />
 
+        {/* ==========================
+            Equipment Routes
+        ========================== */}
+
         <Route
           path="/equipment"
           element={
@@ -102,6 +122,10 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ==========================
+            Marketplace
+        ========================== */}
 
         <Route
           path="/marketplace"
@@ -130,6 +154,10 @@ function App() {
           }
         />
 
+        {/* ==========================
+            Alerts
+        ========================== */}
+
         <Route
           path="/alerts"
           element={
@@ -138,6 +166,10 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ==========================
+            Recommendation
+        ========================== */}
 
         <Route
           path="/recommendation/:id"
@@ -148,11 +180,73 @@ function App() {
           }
         />
 
+        {/* ==========================
+            Profile
+        ========================== */}
+
         <Route
           path="/profile"
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ==========================
+            Admin Panel
+        ========================== */}
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/products"
+          element={
+            <ProtectedRoute>
+              <AdminProducts />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/add-product"
+          element={
+            <ProtectedRoute>
+              <AddProduct />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/edit-product/:id"
+          element={
+            <ProtectedRoute>
+              <EditProduct />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/orders"
+          element={
+            <ProtectedRoute>
+              <AdminOrders />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <AdminUsers />
             </ProtectedRoute>
           }
         />
