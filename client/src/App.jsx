@@ -32,26 +32,19 @@ import AdminUsers from "./pages/admin/AdminUsers";
 
 // Components
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* ==========================
-            Public Routes
-        ========================== */}
-
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
-
         <Route path="/login" element={<Login />} />
-
         <Route path="/register" element={<Register />} />
 
-        {/* ==========================
-            User Dashboard
-        ========================== */}
-
+        {/* Dashboard */}
         <Route
           path="/dashboard"
           element={
@@ -61,10 +54,7 @@ function App() {
           }
         />
 
-        {/* ==========================
-            Farm Routes
-        ========================== */}
-
+        {/* Farm Routes */}
         <Route
           path="/farms"
           element={
@@ -92,10 +82,7 @@ function App() {
           }
         />
 
-        {/* ==========================
-            Equipment Routes
-        ========================== */}
-
+        {/* Equipment Routes */}
         <Route
           path="/equipment"
           element={
@@ -123,10 +110,7 @@ function App() {
           }
         />
 
-        {/* ==========================
-            Marketplace
-        ========================== */}
-
+        {/* Marketplace */}
         <Route
           path="/marketplace"
           element={
@@ -154,10 +138,7 @@ function App() {
           }
         />
 
-        {/* ==========================
-            Alerts
-        ========================== */}
-
+        {/* Alerts */}
         <Route
           path="/alerts"
           element={
@@ -167,10 +148,7 @@ function App() {
           }
         />
 
-        {/* ==========================
-            Recommendation
-        ========================== */}
-
+        {/* Recommendation */}
         <Route
           path="/recommendation/:id"
           element={
@@ -180,10 +158,7 @@ function App() {
           }
         />
 
-        {/* ==========================
-            Profile
-        ========================== */}
-
+        {/* Profile */}
         <Route
           path="/profile"
           element={
@@ -193,15 +168,17 @@ function App() {
           }
         />
 
-        {/* ==========================
-            Admin Panel
-        ========================== */}
+        {/* =======================
+            Admin Routes
+        ======================== */}
 
         <Route
           path="/admin"
           element={
             <ProtectedRoute>
-              <AdminDashboard />
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
             </ProtectedRoute>
           }
         />
@@ -210,7 +187,9 @@ function App() {
           path="/admin/products"
           element={
             <ProtectedRoute>
-              <AdminProducts />
+              <AdminRoute>
+                <AdminProducts />
+              </AdminRoute>
             </ProtectedRoute>
           }
         />
@@ -219,7 +198,9 @@ function App() {
           path="/admin/add-product"
           element={
             <ProtectedRoute>
-              <AddProduct />
+              <AdminRoute>
+                <AddProduct />
+              </AdminRoute>
             </ProtectedRoute>
           }
         />
@@ -228,7 +209,9 @@ function App() {
           path="/admin/edit-product/:id"
           element={
             <ProtectedRoute>
-              <EditProduct />
+              <AdminRoute>
+                <EditProduct />
+              </AdminRoute>
             </ProtectedRoute>
           }
         />
@@ -237,7 +220,9 @@ function App() {
           path="/admin/orders"
           element={
             <ProtectedRoute>
-              <AdminOrders />
+              <AdminRoute>
+                <AdminOrders />
+              </AdminRoute>
             </ProtectedRoute>
           }
         />
@@ -246,7 +231,9 @@ function App() {
           path="/admin/users"
           element={
             <ProtectedRoute>
-              <AdminUsers />
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
             </ProtectedRoute>
           }
         />

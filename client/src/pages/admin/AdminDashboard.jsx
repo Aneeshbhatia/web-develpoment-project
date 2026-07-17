@@ -1,280 +1,150 @@
-import AdminLayout from "../../components/admin/AdminLayout";
-
-import {
-  Package,
-  Users,
-  ShoppingCart,
-  IndianRupee,
-  TrendingUp,
-  Tractor,
-} from "lucide-react";
-
-const stats = [
-  {
-    title: "Total Products",
-    value: 67,
-    icon: Package,
-    color: "bg-green-500",
-  },
-  {
-    title: "Total Users",
-    value: 128,
-    icon: Users,
-    color: "bg-blue-500",
-  },
-  {
-    title: "Total Orders",
-    value: 52,
-    icon: ShoppingCart,
-    color: "bg-orange-500",
-  },
-  {
-    title: "Revenue",
-    value: "₹1,25,000",
-    icon: IndianRupee,
-    color: "bg-purple-500",
-  },
-];
-
-const recentOrders = [
-  {
-    id: "#ORD001",
-    customer: "Amit Sharma",
-    amount: "₹2,350",
-    status: "Delivered",
-  },
-  {
-    id: "#ORD002",
-    customer: "Rahul Singh",
-    amount: "₹5,200",
-    status: "Pending",
-  },
-  {
-    id: "#ORD003",
-    customer: "Priya Devi",
-    amount: "₹980",
-    status: "Delivered",
-  },
-  {
-    id: "#ORD004",
-    customer: "Mohit Kumar",
-    amount: "₹4,750",
-    status: "Processing",
-  },
-];
+import { useEffect, useState } from "react";
+import Sidebar from "../../components/Sidebar";
+import { getAdminDashboard } from "../../services/adminDashboardService";
 
 const AdminDashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
+
+  const fetchDashboard = async () => {
+    try {
+      console.log("🚀 Fetching Admin Dashboard...");
+
+      const data = await getAdminDashboard();
+
+      console.log("✅ API Response:", data);
+
+      setStats(data.stats);
+      setRecentOrders(data.recentOrders || []);
+    } catch (error) {
+      console.error("❌ Dashboard Error:", error);
+
+      console.log("Status:", error.response?.status);
+      console.log("Response:", error.response?.data);
+
+      setErrorMessage(
+        error.response?.data?.message || "Failed to load dashboard."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen text-2xl font-semibold">
+        Loading Dashboard...
+      </div>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
+          <h2 className="text-xl font-bold mb-2">Dashboard Error</h2>
+          <p>{errorMessage}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <AdminLayout>
-      <div>
+    <div className="flex bg-gray-100 min-h-screen">
+      <Sidebar />
 
-        {/* Heading */}
+      <div className="flex-1 p-8">
+        <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
 
-        <div className="mb-8">
-
-          <h1 className="text-3xl font-bold text-slate-800">
-            Admin Dashboard
-          </h1>
-
-          <p className="text-slate-500 mt-2">
-            Welcome to Smart Irrigation Admin Panel
-          </p>
-
-        </div>
-
-        {/* Statistics */}
-
-        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
-
-          {stats.map((item) => {
-
-            const Icon = item.icon;
-
-            return (
-              <div
-                key={item.title}
-                className="bg-white rounded-xl shadow p-6 flex justify-between items-center"
-              >
-                <div>
-
-                  <p className="text-gray-500 text-sm">
-                    {item.title}
-                  </p>
-
-                  <h2 className="text-3xl font-bold mt-2">
-                    {item.value}
-                  </h2>
-
-                </div>
-
-                <div
-                  className={`${item.color} p-4 rounded-xl text-white`}
-                >
-                  <Icon size={30} />
-                </div>
-
-              </div>
-            );
-
-          })}
-
-        </div>
-
-        {/* Dashboard Cards */}
-
-        <div className="grid lg:grid-cols-2 gap-6 mt-8">
-
-          {/* Revenue */}
-
+        <div className="grid grid-cols-4 gap-6 mb-10">
           <div className="bg-white rounded-xl shadow p-6">
-
-            <div className="flex items-center gap-3 mb-4">
-
-              <TrendingUp className="text-green-600" />
-
-              <h2 className="font-bold text-xl">
-                Sales Overview
-              </h2>
-
-            </div>
-
-            <div className="h-64 flex justify-center items-center">
-
-              <p className="text-gray-400">
-                Chart Coming Soon...
-              </p>
-
-            </div>
-
+            <h2 className="text-gray-500">Total Users</h2>
+            <p className="text-4xl font-bold">{stats.totalUsers}</p>
           </div>
 
-          {/* Farm Summary */}
-
           <div className="bg-white rounded-xl shadow p-6">
-
-            <div className="flex items-center gap-3 mb-4">
-
-              <Tractor className="text-green-600" />
-
-              <h2 className="font-bold text-xl">
-                Farm Summary
-              </h2>
-
-            </div>
-
-            <div className="space-y-5 mt-6">
-
-              <div className="flex justify-between">
-
-                <span>Total Farms</span>
-
-                <span className="font-bold text-green-600">
-                  25
-                </span>
-
-              </div>
-
-              <div className="flex justify-between">
-
-                <span>Equipment</span>
-
-                <span className="font-bold text-blue-600">
-                  41
-                </span>
-
-              </div>
-
-              <div className="flex justify-between">
-
-                <span>Weather Alerts</span>
-
-                <span className="font-bold text-red-500">
-                  6
-                </span>
-
-              </div>
-
-              <div className="flex justify-between">
-
-                <span>Active Irrigation</span>
-
-                <span className="font-bold text-purple-600">
-                  18
-                </span>
-
-              </div>
-
-            </div>
-
+            <h2 className="text-gray-500">Total Farms</h2>
+            <p className="text-4xl font-bold">{stats.totalFarms}</p>
           </div>
 
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-gray-500">Equipment</h2>
+            <p className="text-4xl font-bold">{stats.totalEquipment}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-gray-500">Products</h2>
+            <p className="text-4xl font-bold">{stats.totalProducts}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-gray-500">Orders</h2>
+            <p className="text-4xl font-bold">{stats.totalOrders}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-gray-500">Pending Orders</h2>
+            <p className="text-4xl font-bold text-yellow-600">
+              {stats.pendingOrders}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-gray-500">Delivered Orders</h2>
+            <p className="text-4xl font-bold text-green-600">
+              {stats.deliveredOrders}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-gray-500">Revenue</h2>
+            <p className="text-4xl font-bold text-green-700">
+              ₹{stats.revenue}
+            </p>
+          </div>
         </div>
 
-        {/* Recent Orders */}
-
-        <div className="bg-white rounded-xl shadow mt-8 p-6">
-
-          <h2 className="text-xl font-bold mb-6">
-            Recent Orders
-          </h2>
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-2xl font-bold mb-5">Recent Orders</h2>
 
           <table className="w-full">
-
             <thead>
-
-              <tr className="border-b">
-
-                <th className="text-left py-3">Order ID</th>
-
-                <th className="text-left">Customer</th>
-
-                <th className="text-left">Amount</th>
-
-                <th className="text-left">Status</th>
-
+              <tr className="border-b bg-gray-100">
+                <th className="text-left p-3">Customer</th>
+                <th className="text-left p-3">Email</th>
+                <th className="text-left p-3">Amount</th>
+                <th className="text-left p-3">Status</th>
               </tr>
-
             </thead>
 
             <tbody>
-
-              {recentOrders.map((order) => (
-
-                <tr
-                  key={order.id}
-                  className="border-b hover:bg-gray-50"
-                >
-
-                  <td className="py-4">
-                    {order.id}
+              {recentOrders.length > 0 ? (
+                recentOrders.map((order) => (
+                  <tr key={order._id} className="border-b">
+                    <td className="p-3">{order.user?.name || "N/A"}</td>
+                    <td className="p-3">{order.user?.email || "N/A"}</td>
+                    <td className="p-3">₹{order.totalAmount}</td>
+                    <td className="p-3">{order.orderStatus}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="text-center py-6">
+                    No Recent Orders
                   </td>
-
-                  <td>{order.customer}</td>
-
-                  <td>{order.amount}</td>
-
-                  <td>
-
-                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
-
-                      {order.status}
-
-                    </span>
-
-                  </td>
-
                 </tr>
-
-              ))}
-
+              )}
             </tbody>
-
           </table>
-
         </div>
-
       </div>
-    </AdminLayout>
+    </div>
   );
 };
 

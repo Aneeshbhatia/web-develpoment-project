@@ -1,8 +1,8 @@
 import axios from "axios";
 
-const API = "http://localhost:5001/api/dashboard";
+const API = "http://localhost:5001/api/admin/dashboard";
 
-export const getDashboardStats = async () => {
+export const getAdminDashboard = async () => {
   const token = localStorage.getItem("token");
 
   const { data } = await axios.get(API, {
