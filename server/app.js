@@ -16,8 +16,9 @@ const productRoutes = require("./routes/productRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const orderRoutes = require("./routes/orderRoutes");
-const dashboardRoutes = require("./routes/dashboardRoutes");
-const userRoutes = require("./routes/userRoutes"); // ✅ NEW
+const dashboardRoutes = require("./routes/dashboardRoutes"); // Farmer Dashboard
+const adminDashboardRoutes = require("./routes/adminDashboardRoutes"); // ✅ NEW
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
@@ -26,11 +27,8 @@ const app = express();
 // ============================
 
 app.use(cors());
-
 app.use(express.json());
-
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieParser());
 
 // ============================
@@ -60,8 +58,11 @@ app.use("/api/recommendation", recommendationRoutes);
 // Equipment
 app.use("/api/equipment", equipmentRoutes);
 
-// Dashboard
+// Farmer Dashboard
 app.use("/api/dashboard", dashboardRoutes);
+
+// ✅ Admin Dashboard
+app.use("/api/admin/dashboard", adminDashboardRoutes);
 
 // Marketplace Products
 app.use("/api/products", productRoutes);
