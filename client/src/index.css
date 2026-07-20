@@ -1,4 +1,92 @@
 @import "tailwindcss";
+
+
+html,
+body {
+  min-height: 100%;
+  background-color: #080c0a;
+}
+
+#root {
+  min-height: 100vh;
+  background-color: #080c0a;
+}
+
+/* Dark scrollbar so the track doesn't render as a light strip */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080c0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1c2b24;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2a3b32;
+}
+
+* {
+  scrollbar-color: #1c2b24 #080c0a;
+}
+
+/* Global HUD styles (moved out of Sidebar.jsx to avoid re-injecting
+   a <style> tag with a remote font @import on every render) */
+.hud-root {
+  font-family: 'Inter', sans-serif;
+}
+
+.hud-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.hud-mono {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .02em;
+}
+
+@keyframes hud-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .25; }
+}
+
+.hud-blink {
+  animation: hud-blink 1.8s ease-in-out infinite;
+}
+
+.nav-link {
+  position: relative;
+  color: #B7C7BE;
+}
+
+.nav-link:hover {
+  background: rgba(107, 255, 184, .06);
+  color: #EAF5EE;
+}
+
+.nav-link.active {
+  background: rgba(107, 255, 184, .10);
+  color: #6BFFB8;
+  box-shadow: inset 0 0 0 1px rgba(107, 255, 184, .30);
+}
+
+.nav-link.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: #6BFFB8;
+  box-shadow: 0 0 8px #6BFFB8;
+}
+
 @keyframes pulseBell {
   0% {
     transform: scale(1);

@@ -13,20 +13,26 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+const NAV_ITEMS = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/farms", label: "My Farms", icon: Sprout },
+  { to: "/equipment", label: "Equipment", icon: Tractor },
+  { to: "/marketplace", label: "Marketplace", icon: ShoppingCart },
+  { to: "/cart", label: "My Cart", icon: ShoppingBag },
+  { to: "/alerts", label: "Alerts", icon: Bell },
+  { to: "/profile", label: "Profile", icon: User },
+];
+
 const Sidebar = () => {
   const navigate = useNavigate();
 
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  const NAV_ITEMS = [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/farms", label: "My Farms", icon: Sprout },
-    { to: "/equipment", label: "Equipment", icon: Tractor },
-    { to: "/marketplace", label: "Marketplace", icon: ShoppingCart },
-    { to: "/cart", label: "My Cart", icon: ShoppingBag },
-    { to: "/alerts", label: "Alerts", icon: Bell },
-    { to: "/profile", label: "Profile", icon: User },
-  ];
+  const user = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user"));
+    } catch {
+      return null;
+    }
+  })();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -42,60 +48,6 @@ const Sidebar = () => {
           "linear-gradient(180deg, #071C15 0%, #0C1713 55%, #05100C 100%)",
       }}
     >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
-        .hud-root{
-          font-family:'Inter',sans-serif;
-        }
-
-        .hud-display{
-          font-family:'Space Grotesk',sans-serif;
-        }
-
-        .hud-mono{
-          font-family:'JetBrains Mono',monospace;
-          letter-spacing:.02em;
-        }
-
-        @keyframes hud-blink{
-          0%,100%{opacity:1;}
-          50%{opacity:.25;}
-        }
-
-        .hud-blink{
-          animation:hud-blink 1.8s ease-in-out infinite;
-        }
-
-        .nav-link{
-          position:relative;
-          color:#B7C7BE;
-        }
-
-        .nav-link:hover{
-          background:rgba(107,255,184,.06);
-          color:#EAF5EE;
-        }
-
-        .nav-link.active{
-          background:rgba(107,255,184,.10);
-          color:#6BFFB8;
-          box-shadow:inset 0 0 0 1px rgba(107,255,184,.30);
-        }
-
-        .nav-link.active::before{
-          content:"";
-          position:absolute;
-          left:0;
-          top:8px;
-          bottom:8px;
-          width:3px;
-          border-radius:2px;
-          background:#6BFFB8;
-          box-shadow:0 0 8px #6BFFB8;
-        }
-      `}</style>
-
       {/* Logo */}
       <div>
         <div className="flex items-center gap-3 p-6 border-b border-[#1C2B24]">
@@ -115,7 +67,6 @@ const Sidebar = () => {
         </div>
 
         {/* Navigation */}
-
         <nav className="mt-6 flex flex-col gap-1.5 px-4">
           {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
             <NavLink
@@ -149,7 +100,6 @@ const Sidebar = () => {
       </div>
 
       {/* Bottom Section */}
-
       <div className="p-5 border-t border-[#1C2B24]">
         <div className="mb-4 flex items-center gap-2">
           <span
