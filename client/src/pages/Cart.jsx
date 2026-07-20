@@ -9,7 +9,7 @@ import {
   clearCart,
 } from "../services/cartService";
 
-import { placeOrder } from "../services/orderService";
+
 
 import {
   ShoppingCart,
@@ -203,48 +203,16 @@ const Cart = () => {
   // Checkout
   // ==========================
 
-  const handleCheckout=async()=>{
+  const handleCheckout = () => {
 
-    if(cart.length===0){
+  if (cart.length === 0) {
+    alert("Your cart is empty");
+    return;
+  }
 
-      alert("Your cart is empty");
+  navigate("/checkout");
 
-      return;
-
-    }
-
-    try{
-
-      const response=await placeOrder({
-
-        shippingAddress:"Nadaun, Himachal Pradesh",
-
-        paymentMethod:"Cash On Delivery",
-
-      });
-
-      if(response.success){
-
-        alert(response.message);
-
-        await loadCart();
-
-        navigate("/orders");
-
-      }
-
-    }catch(error){
-
-      console.log(error);
-
-      alert(
-        error.response?.data?.message ||
-        "Order Failed"
-      );
-
-    }
-
-  };
+};
 
   const total=cart.reduce((sum,item)=>{
 

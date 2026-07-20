@@ -21,6 +21,7 @@ import Orders from "./pages/Orders";
 import Alerts from "./pages/Alerts";
 import Recommendation from "./pages/Recommendation";
 import Profile from "./pages/Profile";
+import Checkout from "./pages/Checkout";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -91,6 +92,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/checkout" element={<Checkout />} />
 
         <Route
           path="/add-equipment"

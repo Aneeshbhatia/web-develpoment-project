@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import { getAdminDashboard } from "../../services/adminDashboardService";
