@@ -25,6 +25,8 @@ import {
   Package,
   ArrowUpRight,
   Clock,
+  LocateFixed,
+  MapPin,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -38,7 +40,46 @@ const INITIAL_ZONES = [
   { id: "zone-d", name: "Zone D · East Slope", moisture: 55 },
 ];
 
-const CITY = "Palampur";
+const DEFAULT_CITY = "shimla";
+const CITY_CACHE_KEY = "weatherCity";
+const CITY_SOURCE_KEY = "weatherCitySource"; // "auto" | "manual" | "default"
+
+// ---------------------------------------------------------------------------
+// Geolocation helpers
+// ---------------------------------------------------------------------------
+
+// Wraps navigator.geolocation in a Promise with a timeout so the dashboard
+// never hangs waiting on a permission prompt the user ignores.
+function getCurrentCoords({ timeout = 8000 } = {}) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by this browser"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      (err) => reject(err),
+      { timeout, maximumAge: 10 * 60 * 1000 }
+    );
+  });
+}
+
+// Reverse-geocodes lat/lon into a city name via BigDataCloud's free
+// client-side endpoint (no API key required), so the result can be handed
+// straight to the existing getWeather(cityName) call.
+async function reverseGeocodeCity(lat, lon) {
+  try {
+    const res = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.city || data.locality || data.principalSubdivision || null;
+  } catch {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Small presentational helpers
@@ -126,6 +167,13 @@ const Dashboard = () => {
   }, []);
 
   const [weather, setWeather] = useState(null);
+  const [city, setCity] = useState(
+    localStorage.getItem(CITY_CACHE_KEY) || DEFAULT_CITY
+  );
+  const [citySource, setCitySource] = useState(
+    localStorage.getItem(CITY_SOURCE_KEY) || "default"
+  );
+  const [locating, setLocating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [zones] = useState(INITIAL_ZONES);
   const [now, setNow] = useState(new Date());
@@ -178,12 +226,54 @@ const Dashboard = () => {
     }));
   }, [zones]);
 
+  const loadWeather = async (selectedCity) => {
+    const weatherResponse = await getWeather(selectedCity);
+    if (weatherResponse?.success) setWeather(weatherResponse.data);
+  };
+
+  // Detects the browser's current location, reverse-geocodes it to a city
+  // name, and switches the weather card over to it. Runs automatically on
+  // first visit (when no city has been picked before); can also be
+  // triggered manually via the pin button on the weather card.
+  const detectLocation = async ({ silent = false } = {}) => {
+    if (!silent) setLocating(true);
+    try {
+      const { lat, lon } = await getCurrentCoords();
+      const detectedCity = await reverseGeocodeCity(lat, lon);
+
+      if (detectedCity) {
+        setCity(detectedCity);
+        setCitySource("auto");
+        localStorage.setItem(CITY_CACHE_KEY, detectedCity);
+        localStorage.setItem(CITY_SOURCE_KEY, "auto");
+        await loadWeather(detectedCity);
+      }
+    } catch (error) {
+      // Permission denied, timed out, or unsupported — silently keep
+      // whatever city is already active (cached or default).
+      console.warn("Location auto-detect skipped:", error?.message || error);
+    } finally {
+      setLocating(false);
+    }
+  };
+
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const weatherResponse = await getWeather(CITY);
-        if (weatherResponse?.success) {
-          setWeather(weatherResponse.data);
+        const hasManualOrCachedCity =
+          localStorage.getItem(CITY_SOURCE_KEY) === "manual" ||
+          localStorage.getItem(CITY_CACHE_KEY);
+
+        if (hasManualOrCachedCity) {
+          // Respect a previously chosen/cached city on repeat visits.
+          await loadWeather(city);
+        } else {
+          // First-ever visit: try to auto-detect the user's location.
+          await detectLocation({ silent: true });
+          // If detection failed, fall back to the default city's weather.
+          if (!localStorage.getItem(CITY_CACHE_KEY)) {
+            await loadWeather(DEFAULT_CITY);
+          }
         }
 
         const dashboardResponse = await getDashboardStats();
@@ -205,6 +295,7 @@ const Dashboard = () => {
     };
 
     loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -254,12 +345,27 @@ const Dashboard = () => {
               <h2 className="text-[11px] uppercase tracking-[0.2em] hud-mono text-[#6E877B]">
                 Weather
               </h2>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#FFC163]/10">
-                <CloudSun size={18} className="text-[#FFC163]" />
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => detectLocation()}
+                  disabled={locating}
+                  title="Use my current location"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#4FD1FF]/10 hover:bg-[#4FD1FF]/20 transition-colors disabled:opacity-60"
+                >
+                  <LocateFixed
+                    size={13}
+                    className={`text-[#4FD1FF] ${
+                      locating ? "animate-pulse" : ""
+                    }`}
+                  />
+                </button>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#FFC163]/10">
+                  <CloudSun size={18} className="text-[#FFC163]" />
+                </div>
               </div>
             </div>
 
-            {loading ? (
+            {loading || locating ? (
               <div className="mt-6 space-y-2">
                 <SkeletonLine w="w-16" />
                 <SkeletonLine w="w-28" />
@@ -269,10 +375,18 @@ const Dashboard = () => {
                 <h1 className="hud-mono text-4xl font-semibold mt-5 text-[#EAF5EE] tracking-tight">
                   {weather?.temperature ?? "--"}°
                 </h1>
-                <p className="text-[#B7C7BE] text-sm mt-2">
-                  {weather?.city ?? CITY}
-                </p>
-                <p className="text-[#6E877B] text-xs">
+                <div className="flex items-center gap-1.5 mt-2">
+                  <MapPin size={12} className="text-[#6E877B]" />
+                  <p className="text-[#B7C7BE] text-sm">
+                    {weather?.city ?? city}
+                  </p>
+                  {citySource === "auto" && (
+                    <span className="text-[10px] text-[#6BFFB8] bg-[#6BFFB8]/10 px-1.5 py-0.5 rounded-full hud-mono">
+                      auto
+                    </span>
+                  )}
+                </div>
+                <p className="text-[#6E877B] text-xs mt-1">
                   {weather?.description ?? "Fetching conditions"}
                 </p>
               </>
