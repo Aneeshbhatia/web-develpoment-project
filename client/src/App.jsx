@@ -14,14 +14,18 @@ import Equipment from "./pages/Equipment";
 import AddEquipment from "./pages/AddEquipment";
 import EditEquipment from "./pages/EditEquipment";
 
+import BrowseSensors from "./pages/BrowseSensors";
+import SensorDetails from "./pages/SensorDetails";
+import EditSensor from "./pages/EditSensor";
+
 import Marketplace from "./pages/Marketplace";
 import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
+import Checkout from "./pages/Checkout";
 
 import Alerts from "./pages/Alerts";
 import Recommendation from "./pages/Recommendation";
 import Profile from "./pages/Profile";
-import Checkout from "./pages/Checkout";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -30,6 +34,12 @@ import AddProduct from "./pages/admin/AddProduct";
 import EditProduct from "./pages/admin/EditProduct";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminUsers from "./pages/admin/AdminUsers";
+
+// NEW Sensor Catalog Admin Pages
+import AdminSensors from "./components/admin/AdminSensors";
+import AddSensor from "./components/admin/AddSensor";
+import EditSensorCatalog from "./components/admin/EditSensor";
+import InstallSensor from "./pages/InstallSensor";
 
 // Components
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -40,12 +50,18 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* Public Routes */}
+        {/* =======================
+            Public Routes
+        ======================== */}
+
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Dashboard */}
+        {/* =======================
+            Dashboard
+        ======================== */}
+
         <Route
           path="/dashboard"
           element={
@@ -55,7 +71,10 @@ function App() {
           }
         />
 
-        {/* Farm Routes */}
+        {/* =======================
+            Farm Routes
+        ======================== */}
+
         <Route
           path="/farms"
           element={
@@ -83,7 +102,10 @@ function App() {
           }
         />
 
-        {/* Equipment Routes */}
+        {/* =======================
+            Equipment Routes
+        ======================== */}
+
         <Route
           path="/equipment"
           element={
@@ -92,7 +114,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/checkout" element={<Checkout />} />
 
         <Route
           path="/add-equipment"
@@ -102,6 +123,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/install-sensor/:id"
+  element={
+    <ProtectedRoute>
+      <InstallSensor />
+    </ProtectedRoute>
+  }
+/>
 
         <Route
           path="/edit-equipment/:id"
@@ -112,7 +141,42 @@ function App() {
           }
         />
 
-        {/* Marketplace */}
+        {/* =======================
+            Sensor Routes
+        ======================== */}
+
+        <Route
+          path="/sensors"
+          element={
+            <ProtectedRoute>
+              <BrowseSensors />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/sensor/:id"
+          element={
+            <ProtectedRoute>
+              <SensorDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Installed Sensor */}
+        <Route
+          path="/edit-sensor/:id"
+          element={
+            <ProtectedRoute>
+              <EditSensor />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =======================
+            Marketplace
+        ======================== */}
+
         <Route
           path="/marketplace"
           element={
@@ -132,6 +196,15 @@ function App() {
         />
 
         <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/orders"
           element={
             <ProtectedRoute>
@@ -140,7 +213,10 @@ function App() {
           }
         />
 
-        {/* Alerts */}
+        {/* =======================
+            Alerts
+        ======================== */}
+
         <Route
           path="/alerts"
           element={
@@ -150,7 +226,10 @@ function App() {
           }
         />
 
-        {/* Recommendation */}
+        {/* =======================
+            Recommendation
+        ======================== */}
+
         <Route
           path="/recommendation/:id"
           element={
@@ -160,7 +239,10 @@ function App() {
           }
         />
 
-        {/* Profile */}
+        {/* =======================
+            Profile
+        ======================== */}
+
         <Route
           path="/profile"
           element={
@@ -184,6 +266,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Product Management */}
 
         <Route
           path="/admin/products"
@@ -218,6 +302,45 @@ function App() {
           }
         />
 
+        {/* =======================
+            Sensor Catalog Admin
+        ======================== */}
+
+        <Route
+          path="/admin/sensors"
+          element={
+            <ProtectedRoute>
+              <AdminRoute>
+                <AdminSensors />
+              </AdminRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/add-sensor"
+          element={
+            <ProtectedRoute>
+              <AdminRoute>
+                <AddSensor />
+              </AdminRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/edit-sensor/:id"
+          element={
+            <ProtectedRoute>
+              <AdminRoute>
+                <EditSensorCatalog />
+              </AdminRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Orders */}
+
         <Route
           path="/admin/orders"
           element={
@@ -228,6 +351,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Users */}
 
         <Route
           path="/admin/users"

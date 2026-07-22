@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
-
+import { getEquipment } from "../services/equipmentService";
+import { getSensors } from "../services/sensorService";
+import { getFarms } from "../services/farmService";
 import { getWeather } from "../services/weatherService";
 import { getDashboardStats } from "../services/dashboardService";
-
 import {
   LineChart,
   Line,
@@ -13,7 +14,6 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-
 import {
   CloudSun,
   Tractor,
@@ -27,6 +27,12 @@ import {
   Clock,
   LocateFixed,
   MapPin,
+  Wifi,
+  WifiOff,
+  Battery,
+  BatteryLow,
+  BatteryMedium,
+  BatteryFull,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -42,14 +48,12 @@ const INITIAL_ZONES = [
 
 const DEFAULT_CITY = "shimla";
 const CITY_CACHE_KEY = "weatherCity";
-const CITY_SOURCE_KEY = "weatherCitySource"; // "auto" | "manual" | "default"
+const CITY_SOURCE_KEY = "weatherCitySource";
 
 // ---------------------------------------------------------------------------
 // Geolocation helpers
 // ---------------------------------------------------------------------------
 
-// Wraps navigator.geolocation in a Promise with a timeout so the dashboard
-// never hangs waiting on a permission prompt the user ignores.
 function getCurrentCoords({ timeout = 8000 } = {}) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -57,17 +61,13 @@ function getCurrentCoords({ timeout = 8000 } = {}) {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
       (err) => reject(err),
       { timeout, maximumAge: 10 * 60 * 1000 }
     );
   });
 }
 
-// Reverse-geocodes lat/lon into a city name via BigDataCloud's free
-// client-side endpoint (no API key required), so the result can be handed
-// straight to the existing getWeather(cityName) call.
 async function reverseGeocodeCity(lat, lon) {
   try {
     const res = await fetch(
@@ -82,16 +82,16 @@ async function reverseGeocodeCity(lat, lon) {
 }
 
 // ---------------------------------------------------------------------------
-// Small presentational helpers
+// Presentational helpers
 // ---------------------------------------------------------------------------
 
 const SkeletonLine = ({ w = "w-20" }) => (
   <div className={`h-4 ${w} rounded-full bg-[#1C2B24] animate-pulse`} />
 );
 
-const StatusDot = ({ tone = "#6BFFB8" }) => (
+const StatusDot = ({ tone = "#6BFFB8", pulse = true }) => (
   <span
-    className="inline-block w-1.5 h-1.5 rounded-full hud-blink"
+    className={`inline-block w-1.5 h-1.5 rounded-full ${pulse ? "hud-blink" : ""}`}
     style={{ backgroundColor: tone, boxShadow: `0 0 8px ${tone}` }}
   />
 );
@@ -109,7 +109,6 @@ const KpiCard = ({ label, icon: Icon, value, accent, sub, loading }) => (
         <Icon size={18} style={{ color: accent }} />
       </div>
     </div>
-
     {loading ? (
       <div className="mt-6 space-y-2">
         <SkeletonLine w="w-16" />
@@ -153,8 +152,22 @@ const OverviewRow = ({ label, value, accent }) => (
   </div>
 );
 
+const getBatteryIcon = (level) => {
+  if (level === undefined || level === null) return Battery;
+  if (level < 20) return BatteryLow;
+  if (level < 50) return BatteryMedium;
+  return BatteryFull;
+};
+
+const getBatteryColor = (level) => {
+  if (level === undefined || level === null) return "#6E877B";
+  if (level < 20) return "#FF6B6B";
+  if (level < 50) return "#FFC163";
+  return "#6BFFB8";
+};
+
 // ---------------------------------------------------------------------------
-// Dashboard
+// Main Dashboard Component
 // ---------------------------------------------------------------------------
 
 const Dashboard = () => {
@@ -166,6 +179,19 @@ const Dashboard = () => {
     }
   }, []);
 
+  // States from first dashboard
+  const [stats, setStats] = useState({
+    farms: 0,
+    equipment: 0,
+    sensors: 0,
+    activeSensors: 0,
+    inactiveSensors: 0,
+    lowBattery: 0,
+    runningEquipment: 0,
+  });
+  const [recentSensors, setRecentSensors] = useState([]);
+
+  // States from second dashboard
   const [weather, setWeather] = useState(null);
   const [city, setCity] = useState(
     localStorage.getItem(CITY_CACHE_KEY) || DEFAULT_CITY
@@ -214,7 +240,7 @@ const Dashboard = () => {
     [now]
   );
 
-  // Simple 7-point moisture trend derived from the zones (for the chart)
+  // Moisture trend derived from zones
   const moistureTrend = useMemo(() => {
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const base = zones.reduce((sum, z) => sum + z.moisture, 0) / zones.length;
@@ -226,15 +252,17 @@ const Dashboard = () => {
     }));
   }, [zones]);
 
+  // Load weather data
   const loadWeather = async (selectedCity) => {
-    const weatherResponse = await getWeather(selectedCity);
-    if (weatherResponse?.success) setWeather(weatherResponse.data);
+    try {
+      const weatherResponse = await getWeather(selectedCity);
+      if (weatherResponse?.success) setWeather(weatherResponse.data);
+    } catch (error) {
+      console.error("Weather load failed:", error);
+    }
   };
 
-  // Detects the browser's current location, reverse-geocodes it to a city
-  // name, and switches the weather card over to it. Runs automatically on
-  // first visit (when no city has been picked before); can also be
-  // triggered manually via the pin button on the weather card.
+  // Detect location and update weather
   const detectLocation = async ({ silent = false } = {}) => {
     if (!silent) setLocating(true);
     try {
@@ -249,42 +277,64 @@ const Dashboard = () => {
         await loadWeather(detectedCity);
       }
     } catch (error) {
-      // Permission denied, timed out, or unsupported — silently keep
-      // whatever city is already active (cached or default).
       console.warn("Location auto-detect skipped:", error?.message || error);
     } finally {
       setLocating(false);
     }
   };
 
+  // Load all dashboard data
   useEffect(() => {
-    const loadDashboard = async () => {
+    const loadDashboardData = async () => {
       try {
+        // Load weather
         const hasManualOrCachedCity =
           localStorage.getItem(CITY_SOURCE_KEY) === "manual" ||
           localStorage.getItem(CITY_CACHE_KEY);
 
         if (hasManualOrCachedCity) {
-          // Respect a previously chosen/cached city on repeat visits.
           await loadWeather(city);
         } else {
-          // First-ever visit: try to auto-detect the user's location.
           await detectLocation({ silent: true });
-          // If detection failed, fall back to the default city's weather.
           if (!localStorage.getItem(CITY_CACHE_KEY)) {
             await loadWeather(DEFAULT_CITY);
           }
         }
 
-        const dashboardResponse = await getDashboardStats();
-        if (dashboardResponse?.success) {
+        // Load farm, equipment, and sensor data
+        const [farmRes, eqRes, sensorRes, dashboardRes] = await Promise.all([
+          getFarms(),
+          getEquipment(),
+          getSensors(),
+          getDashboardStats(),
+        ]);
+
+        const farms = farmRes.success ? farmRes.farms : [];
+        const equipment = eqRes.success ? eqRes.equipment : [];
+        const sensors = sensorRes.success ? sensorRes.sensors : [];
+
+        // Update stats
+        setStats({
+          farms: farms.length,
+          equipment: equipment.length,
+          sensors: sensors.length,
+          activeSensors: sensors.filter(s => s.status === "Active").length,
+          inactiveSensors: sensors.filter(s => s.status !== "Active").length,
+          lowBattery: sensors.filter(s => (s.batteryLevel ?? 100) < 20).length,
+          runningEquipment: equipment.filter(e => e.status === "Running").length,
+        });
+
+        setRecentSensors(sensors.slice(0, 5));
+
+        // Update dashboard stats
+        if (dashboardRes?.success) {
           setDashboard({
-            totalFarms: dashboardResponse.stats.totalFarms,
-            totalEquipment: dashboardResponse.stats.totalEquipment,
-            totalOrders: dashboardResponse.stats.totalOrders,
-            totalAlerts: dashboardResponse.stats.totalAlerts,
-            recentOrders: dashboardResponse.recentOrders ?? [],
-            recentAlerts: dashboardResponse.recentAlerts ?? [],
+            totalFarms: dashboardRes.stats.totalFarms,
+            totalEquipment: dashboardRes.stats.totalEquipment,
+            totalOrders: dashboardRes.stats.totalOrders,
+            totalAlerts: dashboardRes.stats.totalAlerts,
+            recentOrders: dashboardRes.recentOrders ?? [],
+            recentAlerts: dashboardRes.recentAlerts ?? [],
           });
         }
       } catch (error) {
@@ -294,10 +344,11 @@ const Dashboard = () => {
       }
     };
 
-    loadDashboard();
+    loadDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Update clock every minute
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
@@ -316,7 +367,7 @@ const Dashboard = () => {
               {user?.name ? `, ${user.name}` : ""}
             </p>
             <h1 className="hud-display text-2xl md:text-3xl font-semibold mt-1">
-              Farm Operations
+              Smart Irrigation Dashboard
             </h1>
           </div>
 
@@ -337,10 +388,11 @@ const Dashboard = () => {
         </div>
 
         {/* =====================================================
-            KPI Row
+            Weather + KPI Row
         ===================================================== */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
-          <div className="hud-panel rounded-2xl p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-5">
+          {/* Weather Card */}
+          <div className="hud-panel rounded-2xl p-6 xl:col-span-2">
             <div className="flex justify-between items-start">
               <h2 className="text-[11px] uppercase tracking-[0.2em] hud-mono text-[#6E877B]">
                 Weather
@@ -393,11 +445,12 @@ const Dashboard = () => {
             )}
           </div>
 
+          {/* KPI Cards */}
           <KpiCard
             label="Farms"
             icon={Sprout}
             accent="#6BFFB8"
-            value={dashboard.totalFarms}
+            value={stats.farms}
             sub="Registered farms"
             loading={loading}
           />
@@ -405,30 +458,68 @@ const Dashboard = () => {
             label="Equipment"
             icon={Tractor}
             accent="#4FD1FF"
-            value={dashboard.totalEquipment}
-            sub="Active equipment"
+            value={stats.equipment}
+            sub={`${stats.runningEquipment} running`}
             loading={loading}
           />
           <KpiCard
-            label="Orders"
-            icon={ShoppingCart}
+            label="Sensors"
+            icon={Radio}
             accent="#FFC163"
-            value={dashboard.totalOrders}
-            sub="Orders placed"
+            value={stats.sensors}
+            sub={`${stats.activeSensors} active`}
             loading={loading}
           />
           <KpiCard
             label="Alerts"
             icon={Bell}
             accent="#FF6B6B"
-            value={dashboard.totalAlerts}
-            sub="Active alerts"
+            value={stats.lowBattery + dashboard.totalAlerts}
+            sub={`${stats.lowBattery} low battery`}
             loading={loading}
           />
         </div>
 
         {/* =====================================================
-            Moisture Trend + Zones
+            Sensor Status Cards (Additional Stats)
+        ===================================================== */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <div className="hud-panel rounded-2xl p-5">
+            <h3 className="text-[#6E877B] text-sm">Active Sensors</h3>
+            <p className="text-2xl font-bold text-[#6BFFB8] mt-1">
+              {stats.activeSensors}
+            </p>
+            <p className="text-xs text-[#6E877B] mt-1">
+              {Math.round((stats.activeSensors / stats.sensors) * 100) || 0}% of total
+            </p>
+          </div>
+          <div className="hud-panel rounded-2xl p-5">
+            <h3 className="text-[#6E877B] text-sm">Inactive Sensors</h3>
+            <p className="text-2xl font-bold text-[#FF6B6B] mt-1">
+              {stats.inactiveSensors}
+            </p>
+            <p className="text-xs text-[#6E877B] mt-1">Need attention</p>
+          </div>
+          <div className="hud-panel rounded-2xl p-5">
+            <h3 className="text-[#6E877B] text-sm">Low Battery</h3>
+            <p className="text-2xl font-bold text-[#FFC163] mt-1">
+              {stats.lowBattery}
+            </p>
+            <p className="text-xs text-[#6E877B] mt-1">Below 20%</p>
+          </div>
+          <div className="hud-panel rounded-2xl p-5">
+            <h3 className="text-[#6E877B] text-sm">Running Equipment</h3>
+            <p className="text-2xl font-bold text-[#4FD1FF] mt-1">
+              {stats.runningEquipment}
+            </p>
+            <p className="text-xs text-[#6E877B] mt-1">
+              {Math.round((stats.runningEquipment / stats.equipment) * 100) || 0}% operational
+            </p>
+          </div>
+        </div>
+
+        {/* =====================================================
+            Moisture Trend + Zone Moisture
         ===================================================== */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="hud-panel rounded-2xl p-6 lg:col-span-2">
@@ -505,10 +596,88 @@ const Dashboard = () => {
         </div>
 
         {/* =====================================================
-            Recent Orders + System Overview
+            Recent Sensors + Recent Orders
         ===================================================== */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="hud-panel rounded-2xl p-6 lg:col-span-2">
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Recent Sensors */}
+          <div className="hud-panel rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <Radio size={20} className="text-[#FFC163]" />
+                <h2 className="hud-display text-lg font-semibold">
+                  Recent Sensors
+                </h2>
+              </div>
+              <a
+                href="/sensors"
+                className="text-xs text-[#6E877B] hover:text-[#B7C7BE] flex items-center gap-1 transition-colors"
+              >
+                View all <ArrowUpRight size={13} />
+              </a>
+            </div>
+
+            {loading ? (
+              <div className="space-y-3">
+                <SkeletonLine w="w-full" />
+                <SkeletonLine w="w-full" />
+                <SkeletonLine w="w-2/3" />
+              </div>
+            ) : recentSensors.length === 0 ? (
+              <p className="text-[#6E877B] text-sm py-6 text-center">
+                No sensors installed
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {recentSensors.map((sensor) => {
+                  const BatteryIcon = getBatteryIcon(sensor.batteryLevel);
+                  const batteryColor = getBatteryColor(sensor.batteryLevel);
+                  return (
+                    <div
+                      key={sensor._id}
+                      className="border border-[#1C2B24] rounded-xl p-4 hover:border-[#2A3B32] transition-colors"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-[#EAF5EE] font-medium text-sm">
+                            {sensor.name}
+                          </h3>
+                          <p className="text-[#6E877B] text-xs mt-0.5">
+                            {sensor.type}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              sensor.status === "Active"
+                                ? "bg-[#6BFFB8]/10 text-[#6BFFB8]"
+                                : "bg-[#FF6B6B]/10 text-[#FF6B6B]"
+                            }`}
+                          >
+                            {sensor.status}
+                          </span>
+                          <div className="flex items-center gap-1 mt-1 justify-end">
+                            <BatteryIcon
+                              size={12}
+                              style={{ color: batteryColor }}
+                            />
+                            <span
+                              className="text-xs"
+                              style={{ color: batteryColor }}
+                            >
+                              {sensor.batteryLevel ?? 100}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Orders */}
+          <div className="hud-panel rounded-2xl p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <ShoppingCart size={20} className="text-[#FFC163]" />
@@ -562,76 +731,90 @@ const Dashboard = () => {
               </div>
             )}
           </div>
-
-          <div className="hud-panel rounded-2xl p-6">
-            <h2 className="hud-display text-lg font-semibold mb-6">
-              System Overview
-            </h2>
-            <div className="space-y-4">
-              <OverviewRow
-                label="Farms Registered"
-                value={dashboard.totalFarms}
-                accent="#6BFFB8"
-              />
-              <OverviewRow
-                label="Equipment Active"
-                value={dashboard.totalEquipment}
-                accent="#4FD1FF"
-              />
-              <OverviewRow
-                label="Orders"
-                value={dashboard.totalOrders}
-                accent="#FFC163"
-              />
-              <OverviewRow
-                label="Alerts"
-                value={dashboard.totalAlerts}
-                accent="#FF6B6B"
-              />
-              <hr className="border-[#1C2B24]" />
-              <div className="flex justify-between items-center">
-                <span className="text-[#6E877B] text-sm">System Status</span>
-                <span className="text-[#6BFFB8] text-sm flex items-center gap-2 font-medium">
-                  <Radio size={12} className="hud-blink" />
-                  Online
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* =====================================================
-            Quick Actions
+            System Overview + Quick Actions
         ===================================================== */}
-        <div className="hud-panel rounded-2xl p-6">
-          <h2 className="hud-display text-lg font-semibold mb-6">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <QuickAction
-              label="Add Farm"
-              icon={PlusCircle}
-              accent="#6BFFB8"
-              href="/add-farm"
-            />
-            <QuickAction
-              label="Add Equipment"
-              icon={Tractor}
-              accent="#4FD1FF"
-              href="/add-equipment"
-            />
-            <QuickAction
-              label="Marketplace"
-              icon={ShoppingCart}
-              accent="#FFC163"
-              href="/marketplace"
-            />
-            <QuickAction
-              label="Orders"
-              icon={Package}
-              accent="#FF6B6B"
-              href="/orders"
-            />
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="hud-panel rounded-2xl p-6 lg:col-span-2">
+            <h2 className="hud-display text-lg font-semibold mb-6">
+              System Overview
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div>
+                <p className="text-[#6E877B] text-xs uppercase tracking-wider">
+                  Total Farms
+                </p>
+                <p className="text-2xl font-bold text-[#6BFFB8] mt-1">
+                  {dashboard.totalFarms}
+                </p>
+              </div>
+              <div>
+                <p className="text-[#6E877B] text-xs uppercase tracking-wider">
+                  Equipment
+                </p>
+                <p className="text-2xl font-bold text-[#4FD1FF] mt-1">
+                  {dashboard.totalEquipment}
+                </p>
+              </div>
+              <div>
+                <p className="text-[#6E877B] text-xs uppercase tracking-wider">
+                  Total Orders
+                </p>
+                <p className="text-2xl font-bold text-[#FFC163] mt-1">
+                  {dashboard.totalOrders}
+                </p>
+              </div>
+              <div>
+                <p className="text-[#6E877B] text-xs uppercase tracking-wider">
+                  Alerts
+                </p>
+                <p className="text-2xl font-bold text-[#FF6B6B] mt-1">
+                  {dashboard.totalAlerts}
+                </p>
+              </div>
+            </div>
+            <hr className="border-[#1C2B24] my-4" />
+            <div className="flex justify-between items-center">
+              <span className="text-[#6E877B] text-sm">System Status</span>
+              <span className="text-[#6BFFB8] text-sm flex items-center gap-2 font-medium">
+                <Radio size={12} className="hud-blink" />
+                Online
+              </span>
+            </div>
+          </div>
+
+          <div className="hud-panel rounded-2xl p-6">
+            <h2 className="hud-display text-lg font-semibold mb-6">
+              Quick Actions
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <QuickAction
+                label="Add Farm"
+                icon={PlusCircle}
+                accent="#6BFFB8"
+                href="/add-farm"
+              />
+              <QuickAction
+                label="Add Equipment"
+                icon={Tractor}
+                accent="#4FD1FF"
+                href="/add-equipment"
+              />
+              <QuickAction
+                label="Marketplace"
+                icon={ShoppingCart}
+                accent="#FFC163"
+                href="/marketplace"
+              />
+              <QuickAction
+                label="Orders"
+                icon={Package}
+                accent="#FF6B6B"
+                href="/orders"
+              />
+            </div>
           </div>
         </div>
 

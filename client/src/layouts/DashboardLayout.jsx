@@ -3,16 +3,24 @@ import Sidebar from "../components/Sidebar";
 
 const DashboardLayout = ({ children }) => {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#080C0A" }}>
+    <div className="bg-[#080C0A] text-white min-h-screen">
+
+      {/* Fixed Navbar */}
       <Navbar />
 
-      <div className="flex">
-        <Sidebar />
+      {/* Fixed Sidebar */}
+      <Sidebar />
 
-        <main className="flex-1 p-8" style={{ backgroundColor: "#080C0A" }}>
+      {/* Main Content */}
+      <main className="ml-72 pt-16">
+        <div
+          className="h-[calc(100vh-64px)] overflow-y-auto p-8"
+          style={{ backgroundColor: "#080C0A" }}
+        >
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
+
     </div>
   );
 };

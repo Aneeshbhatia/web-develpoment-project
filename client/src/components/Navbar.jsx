@@ -149,7 +149,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-[#080C0A]/95 backdrop-blur-md border-b border-[#1C2B24]">
+   <nav className="fixed top-0 left-0 right-0 h-16 z-50 bg-[#080C0A]/95 backdrop-blur-md border-b border-[#1C2B24]">
   <div className="flex items-center justify-between gap-4 px-6 md:px-10 h-16">
 
     {/* Brand */}
