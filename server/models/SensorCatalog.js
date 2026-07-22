@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const productSchema = new mongoose.Schema(
+const sensorCatalogSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -8,15 +8,22 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
 
-    category: {
+    brand: {
+      type: String,
+      required: true,
+    },
+
+    sensorType: {
       type: String,
       enum: [
-        "Seeds",
-        "Fertilizer",
-        "Equipment",
-        "Pesticide",
-        "Tools",
-        "Sensors", // Added
+        "Soil Moisture",
+        "Temperature",
+        "Humidity",
+        "Rain",
+        "Water Level",
+        "Light",
+        "pH",
+        "Pressure",
       ],
       required: true,
     },
@@ -33,37 +40,27 @@ const productSchema = new mongoose.Schema(
 
     stock: {
       type: Number,
-      default: 0,
-    },
-
-    brand: {
-      type: String,
-      default: "",
-    },
-
-    sensorType: {
-      type: String,
-      default: "",
+      default: 10,
     },
 
     batteryLife: {
       type: String,
-      default: "",
+      default: "2 Years",
     },
 
     connectivity: {
       type: String,
-      default: "",
+      default: "Wi-Fi",
     },
 
     warranty: {
       type: String,
-      default: "",
+      default: "1 Year",
     },
 
     rating: {
       type: Number,
-      default: 4.5,
+      default: 4.8,
     },
 
     reviews: {
@@ -74,7 +71,7 @@ const productSchema = new mongoose.Schema(
     image: {
       type: String,
       default:
-        "https://via.placeholder.com/300x200.png?text=Product",
+        "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800",
     },
   },
   {
@@ -82,4 +79,7 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Product", productSchema);
+module.exports = mongoose.model(
+  "SensorCatalog",
+  sensorCatalogSchema
+);

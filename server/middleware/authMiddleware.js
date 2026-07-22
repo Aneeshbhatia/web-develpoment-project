@@ -5,7 +5,6 @@ const protect = async (req, res, next) => {
   try {
     let token;
 
-    // Check Authorization Header
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer")
@@ -13,7 +12,6 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(" ")[1];
     }
 
-    // No Token
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -21,10 +19,8 @@ const protect = async (req, res, next) => {
       });
     }
 
-    // Verify Token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Find User
     req.user = await User.findById(decoded.id).select("-password");
 
     if (!req.user) {
@@ -38,13 +34,11 @@ const protect = async (req, res, next) => {
   } catch (error) {
     console.error(error);
 
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
       message: "Invalid or expired token.",
     });
   }
 };
 
-module.exports = {
-  protect,
-};
+module.exports = { protect };
